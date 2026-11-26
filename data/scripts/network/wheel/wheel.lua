@@ -1,6 +1,28 @@
 local wheelSystemConfigKey = configKeys and configKeys.WHEEL_SYSTEM_ENABLED or WHEEL_SYSTEM_ENABLED
-if wheelSystemConfigKey and not configManager.getBoolean(wheelSystemConfigKey) then
-	return
+local function isWheelEnabled()
+	return not wheelSystemConfigKey or configManager.getBoolean(wheelSystemConfigKey)
+end
+
+-- Ensure AstraClient is recognized as OTClient for extended opcodes live without server restart
+if Player then
+	function Player.isUsingOtClient(self)
+		if self.isUsingAstraClient and self:isUsingAstraClient() then
+			return true
+		end
+		if self.isUsingOtc and self:isUsingOtc() then
+			return true
+		end
+		if self.isUsingOtcV8 and self:isUsingOtcV8() then
+			return true
+		end
+		if self.isUsingFonticakClient and self:isUsingFonticakClient() then
+			return true
+		end
+		local client = self:getClient()
+		local os = client and client.os or (CLIENTOS_NONE or 0)
+		return os == CLIENTOS_OTCLIENT_LINUX or os == CLIENTOS_OTCLIENT_WINDOWS or os == CLIENTOS_OTCLIENT_MAC or
+		       (CLIENTOS_OTCLIENTV8_LINUX and os >= CLIENTOS_OTCLIENTV8_LINUX and os <= CLIENTOS_OTCLIENTV8_WEB)
+	end
 end
 
 local OPCODE_WHEEL_OPEN = 0x61
@@ -412,7 +434,9 @@ local WHEEL_SLOT_PREREQUISITES = {
 }
 
 local function supportsCustomNetwork(player)
-	return player and player.isUsingOtClient and player:isUsingOtClient()
+	if not player then return false end
+	if player.isUsingAstraClient and player:isUsingAstraClient() then return true end
+	return player.isUsingOtClient and player:isUsingOtClient()
 end
 
 local function wheelKV(player)
@@ -679,6 +703,9 @@ local function isWheelPromoted(player)
 end
 
 local function canOpenWheel(player)
+	if not isWheelEnabled() then
+		return false
+	end
 	return getWheelVocation(player) > 0 and player:getLevel() >= WHEEL_MIN_LEVEL and hasWheelPremium(player) and
 	       isWheelPromoted(player)
 end
@@ -1668,8 +1695,10 @@ local function getForgeRuse(player)
 	return (dodgeChance * (1.0 + (amplification * 0.02))) / 100
 end
 
-local function sendWheelSkillStats(player)
-	if not supportsCustomNetwork(player) or not player.sendExtendedOpcode then
+local function sendWheelSkillStats(player, force)
+	local netOk = supportsCustomNetwork(player)
+	local opcodeOk = player and player.sendExtendedOpcode ~= nil
+	if not netOk or not opcodeOk then
 		return false
 	end
 
@@ -1728,6 +1757,12 @@ local function sendWheelSkillStats(player)
 		attackElement = 0
 	end
 
+	if Rarity and Rarity.getTotalBonus then
+		attackValue = attackValue + Rarity.getTotalBonus(player, "flat_atk")
+		defense = defense + Rarity.getTotalBonus(player, "flat_def")
+		armor = armor + Rarity.getTotalBonus(player, "flat_arm")
+	end
+
 	damageAndHealing = attackValue
 
 	local payload = json.encode({
@@ -1748,8 +1783,9 @@ local function sendWheelSkillStats(player)
 		convertedValue = convertedValue,
 		convertedElement = convertedElement,
 	})
+
 	local key = getWheelPlayerKey(player)
-	if WHEEL_LAST_SKILL_STATS_PAYLOAD[key] == payload then
+	if not force and WHEEL_LAST_SKILL_STATS_PAYLOAD[key] == payload then
 		return true
 	end
 	local sent = player:sendExtendedOpcode(OPCODE_WHEEL_SKILLS, payload)
@@ -1759,12 +1795,19 @@ local function sendWheelSkillStats(player)
 	return sent
 end
 
-function Player.wheelSendSkillStats(self)
-	return sendWheelSkillStats(self)
+function Player.wheelSendSkillStats(self, force)
+	return sendWheelSkillStats(self, force)
 end
 
 local function applyWheelBonuses(player)
 	removeWheelBonuses(player)
+
+	if not isWheelEnabled() then
+		player:sendSkills()
+		player:sendStats()
+		sendWheelSkillStats(player)
+		return {}
+	end
 
 	local profile = loadProfile(player)
 	local bonuses = calculateWheelBonuses(player, profile.points, profile.gems)

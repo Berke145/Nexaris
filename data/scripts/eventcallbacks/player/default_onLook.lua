@@ -77,7 +77,12 @@ event.onLook = function(self, thing, position, distance, description)
 
 	if thing:isItem() then
 		description = description .. thing:getDescription(distance, nil, nil, self)
-		
+		if Rarity and Rarity.modifyLookDescription then
+			local ok, newDesc = pcall(Rarity.modifyLookDescription, thing, description)
+			if ok and newDesc then
+				description = newDesc
+			end
+		end
 	else
 		description = description .. thing:getDescription(distance)
 		

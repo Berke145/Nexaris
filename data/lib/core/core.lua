@@ -28,3 +28,8 @@ dofile(CORE_DIRECTORY .. "/lib/core/workbench.lua")
 dofile(CORE_DIRECTORY .. "/lib/core/teleport.lua")
 dofile(CORE_DIRECTORY .. "/lib/core/tile.lua")
 dofile(CORE_DIRECTORY .. "/lib/core/vocation.lua")
+
+-- Nexaris Rarity System Libraries
+dofile(CORE_DIRECTORY .. "/lib/core/rarity_config.lua")
+dofile(CORE_DIRECTORY .. "/lib/core/rarity_core.lua")
+dofile(CORE_DIRECTORY .. "/lib/core/rarity_stats.lua")

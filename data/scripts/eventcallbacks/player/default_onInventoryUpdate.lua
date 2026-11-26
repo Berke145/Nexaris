@@ -27,9 +27,19 @@ function ec.onUpdateInventory(player, item, slot, equip)
 
     applyLeechChance(player, item, equip)
 
-    if player.wheelSendSkillStats then
-        player:wheelSendSkillStats()
+    -- Rarity Equipment Bonus Synchronization
+    if Rarity then
+        if equip then
+            Rarity.applySlotBonuses(player, item, slot)
+        else
+            Rarity.stripSlotBonuses(player, slot)
+        end
     end
+
+    if player.wheelSendSkillStats then
+        player:wheelSendSkillStats(true)
+    end
+    player:sendStats()
 
     if slot == CONST_SLOT_LEFT or slot == CONST_SLOT_RIGHT then
         local playerGuid = player:getGuid()

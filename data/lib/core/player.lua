@@ -203,6 +203,10 @@ function Player.sendCancelMessage(self, message)
 end
 
 function Player.isUsingOtClient(self)
+	if self.isUsingAstraClient and self:isUsingAstraClient() then
+		return true
+	end
+
 	if self.isUsingOtc and self:isUsingOtc() then
 		return true
 	end
