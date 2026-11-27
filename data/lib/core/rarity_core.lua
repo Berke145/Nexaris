@@ -607,3 +607,80 @@ function Rarity.craftProtectionStone(player)
     player:getPosition():sendMagicEffect(CONST_ME_MAGIC_BLUE)
     return true, string.format("Crafting successful! You created 1x %s.", protMaterial.name)
 end
+
+-- Processes un-evaluated equipment inside a player's Reward Chest, applying Rarity rolls and notifying the player
+function Rarity.processRewardChestForPlayer(player, bossScore, bossName, fromDeath)
+    if not player or not player:isPlayer() then
+        return {}
+    end
+
+    local rewardChest = player:getRewardChest()
+    if not rewardChest then
+        return {}
+    end
+
+    local items = rewardChest:getItems(true)
+    if not items or #items == 0 then
+        return {}
+    end
+
+    bossScore = bossScore or 5000
+    local multiConfig = Rarity.LOOT_CONFIG.MULTIPLE_DROPS or {}
+    local maxAllowed = multiConfig.MAX_RARITY_PER_BOSS or 2
+
+    local rarityDroppedCount = 0
+    local deliveredLootDescriptions = {}
+    local highestTierRolled = Rarity.TIERS.COMMON
+
+    for _, item in ipairs(items) do
+        if Rarity.isEligible(item) then
+            local evaluated = item:getCustomAttribute("RarityEvaluated")
+            local currentTier = Rarity.getItemTier(item)
+
+            if not evaluated and currentTier == Rarity.TIERS.COMMON then
+                item:setCustomAttribute("RarityEvaluated", 1)
+
+                if rarityDroppedCount < maxAllowed then
+                    local rolledTier = Rarity.rollRarityTier and Rarity.rollRarityTier(bossScore, rarityDroppedCount, maxAllowed) or Rarity.TIERS.COMMON
+                    if rolledTier > Rarity.TIERS.COMMON then
+                        rarityDroppedCount = rarityDroppedCount + 1
+                        Rarity.applyTierToItem(item, rolledTier, false)
+                        if rolledTier > highestTierRolled then
+                            highestTierRolled = rolledTier
+                        end
+
+                        local tierInfo = Rarity.TIER_INFO[rolledTier]
+                        local tierName = tierInfo and tierInfo.name or "Rarity"
+                        local rawName = item:getName() or "equipment"
+
+                        local firstChar = tierName:sub(1, 1):lower()
+                        local article = (firstChar == "a" or firstChar == "e" or firstChar == "i" or firstChar == "o" or firstChar == "u") and "an" or "a"
+
+                        local notifyMsg
+                        if fromDeath then
+                            local bossStr = bossName and (" from " .. bossName) or ""
+                            notifyMsg = string.format("[Reward Boss] Congratulations! You obtained %s [%s] %s%s! Check your Reward Chest to claim it.", article, tierName, rawName, bossStr)
+                        else
+                            notifyMsg = string.format("[Reward Chest] You discovered %s [%s] %s in your reward container!", article, tierName, rawName)
+                        end
+
+                        player:sendTextMessage(MESSAGE_EVENT_ADVANCE, notifyMsg)
+                        player:sendTextMessage(MESSAGE_STATUS_CONSOLE_BLUE, notifyMsg)
+
+                        local lootEntry = string.format("%s [%s] %s (Reward Chest)", article, tierName, rawName)
+                        table.insert(deliveredLootDescriptions, lootEntry)
+                    end
+                end
+            end
+        end
+    end
+
+    if highestTierRolled > Rarity.TIERS.COMMON then
+        local pos = player:getPosition()
+        if pos then
+            pos:sendMagicEffect(CONST_ME_FIREWORK_YELLOW)
+        end
+    end
+
+    return deliveredLootDescriptions
+end

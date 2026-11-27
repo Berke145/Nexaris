@@ -95,6 +95,24 @@ function Container:getContentDescription(colorizedLootValue)
 		local loot = {}
 		for _, lootItem in ipairs(items) do
 			local description = lootItem:getNameDescription(lootItem:getSubType(), true)
+			if Rarity and Rarity.getItemTier then
+				local tier = Rarity.getItemTier(lootItem)
+				if tier and tier > Rarity.TIERS.COMMON then
+					local tierInfo = Rarity.TIER_INFO[tier]
+					if tierInfo and tierInfo.name then
+						local tName = tierInfo.name:lower()
+						if description:sub(1, 3) == "an " then
+							description = "an " .. tName .. " " .. description:sub(4)
+						elseif description:sub(1, 2) == "a " then
+							description = "a " .. tName .. " " .. description:sub(3)
+						elseif description:match("^%d+ ") then
+							description = description:gsub("^(%d+) ", "%1 " .. tName .. " ")
+						else
+							description = tName .. " " .. description
+						end
+					end
+				end
+			end
 			if colorizedLootValue then description = ("{%d:%d|%s}"):format(lootItem:getId(), getLootItemValue(lootItem), description) end
 			loot[#loot + 1] = description
 		end

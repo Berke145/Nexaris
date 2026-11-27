@@ -28,7 +28,7 @@ local function getLootRecipients(player)
 	return recipients
 end
 
-local function sendUngroupedLootMessage(player, corpse, monsterName, preyLootText, bountyLootText, useColorized)
+local function sendUngroupedLootMessage(player, corpse, monsterName, preyLootText, bountyLootText, useColorized, extraLootEntries)
 	local recipients = getLootRecipients(player)
 	if #recipients == 0 then
 		return
@@ -48,8 +48,17 @@ local function sendUngroupedLootMessage(player, corpse, monsterName, preyLootTex
 	end
 
 	local function buildText(colorized)
+		local corpseContent = corpse:getContentDescription(colorized)
+		local pieces = {}
+		if extraLootEntries and #extraLootEntries > 0 then
+			table.insert(pieces, table.concat(extraLootEntries, ", "))
+		end
+		if corpseContent and corpseContent ~= "nothing" and corpseContent ~= "" then
+			table.insert(pieces, corpseContent)
+		end
+		local fullLoot = #pieces > 0 and table.concat(pieces, ", ") or "nothing"
 		return ("Loot of %s: %s%s%s."):format(
-			monsterName, corpse:getContentDescription(colorized), preyLootText, bountyLootText)
+			monsterName, fullLoot, preyLootText, bountyLootText)
 	end
 
 	for _, recipient in ipairs(recipients) do
@@ -175,6 +184,11 @@ event.onDropLoot = function(self, corpse)
 			end
 		end
 
+		local rarityLootEntries = nil
+		if Rarity and Rarity.processCorpseLoot then
+			rarityLootEntries = Rarity.processCorpseLoot(self, corpse, player)
+		end
+
 		if player then
 			local lootGroupingEnabled = configManager.getBoolean(configKeys.LOOT_GROUPING_ENABLED)
 			if not lootGroupingEnabled then
@@ -182,7 +196,7 @@ event.onDropLoot = function(self, corpse)
 				local bountyLootText = bountyLootBonus > 0 and
 					(" (Bounty More Loot +%s%%)"):format(formatHundredthsPercent(bountyLootBonus)) or ""
 				local useColorized = configManager.getBoolean(configKeys.COLORIZED_LOOT_VALUE)
-				sendUngroupedLootMessage(player, corpse, mType:getNameDescription(), preyLootText, bountyLootText, useColorized)
+				sendUngroupedLootMessage(player, corpse, mType:getNameDescription(), preyLootText, bountyLootText, useColorized, rarityLootEntries)
 			end
 		end
 	else

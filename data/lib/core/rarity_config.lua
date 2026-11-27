@@ -309,14 +309,27 @@ Rarity.LOOT_CONFIG = {
     },
 
     -- Base chance dividers (Calculated as: chance = powerScore / divider)
-    -- Higher divider = rarer.
+    -- Lower divider = higher drop chance.
     TIER_CHANCE_DIVIDERS = {
-        [Rarity.TIERS.UNCOMMON]  = 5,    -- e.g. Score 400 -> 10%
-        [Rarity.TIERS.RARE]      = 50,   -- e.g. Score 1500 -> 10%
-        [Rarity.TIERS.EPIC]      = 100,   -- e.g. Score 3000 -> 5%
-        [Rarity.TIERS.LEGENDARY] = 150,  -- e.g. Score 7500 -> 3%
-        [Rarity.TIERS.MYTHIC]    = 200, -- e.g. Score 15000 -> 1%
-    }
+        [Rarity.TIERS.UNCOMMON]  = 40,    -- e.g. Score 800 -> 20%
+        [Rarity.TIERS.RARE]      = 120,   -- e.g. Score 1200 -> 10%
+        [Rarity.TIERS.EPIC]      = 400,   -- e.g. Score 2000 -> 5%
+        [Rarity.TIERS.LEGENDARY] = 1500,  -- e.g. Score 8000 -> 5.3%
+        [Rarity.TIERS.MYTHIC]    = 8000,  -- e.g. Score 15000 -> 1.8%
+    },
+
+    -- Test switch: When true, EVERY dropped equipment is 100% guaranteed to be a Rarity item!
+    FORCE_DROP_TEST = true,
+
+    -- Global drop rate multiplier (1.0 = standard, 2.0 = double drop rate, etc.)
+    CHANCE_MULTIPLIER = 1.0,
+
+    -- Multiple rarity drops per kill configuration (Diminishing returns & caps)
+    MULTIPLE_DROPS = {
+        MAX_RARITY_PER_MONSTER = 1,          -- Regular monsters: at most 1 rarity item per corpse
+        MAX_RARITY_PER_BOSS = 2,             -- Bosses: at most 2 rarity items per kill
+        SUBSEQUENT_CHANCE_MULTIPLIER = 0.10, -- 90% chance penalty (0.10) for each subsequent rarity drop
+    },
 }
 
 -- Salvage Configuration

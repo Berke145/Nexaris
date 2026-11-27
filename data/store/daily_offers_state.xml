@@ -1,5 +1,9 @@
 <?xml version="1.0"?>
-<dailyOffers expiresAt="1795736840" offerCount="2" rotationSeconds="86400" minDiscountPercent="10" maxDiscountPercent="25" highlightMode="2">
-  <offer id="14097" discountPercent="16" state="sale" />
-  <offer id="14223" discountPercent="21" state="timed" />
+<dailyOffers expiresAt="1795823911" offerCount="2" rotationSeconds="86400" minDiscountPercent="10" maxDiscountPercent="25" highlightMode="2">
+  <offer id="3008" discountPercent="22" state="timed" />
+  <offer id="14184" discountPercent="21" state="timed" />
+  <previous>
+    <offer id="14097" />
+    <offer id="14223" />
+  </previous>
 </dailyOffers>
